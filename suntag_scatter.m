@@ -1,9 +1,9 @@
 parentDir = '/Users/reyer/Data/SunTag_Tracking/'; %This and line below define
-newFile = 'May_31_2018_D6_P1_F10_RT';             % where you want to save the images. Create a new folder
+newFile = 'suntag8418';             % where you want to save the images. Create a new folder
 graph_title = 'mRNA spots over GFP Image, Frame';
 sample = 'sample1_5by5';
 
-window = 3;
+window = 5;
 
 compareDir = strcat([parentDir,newFile]);
 sampleDir = strcat([compareDir,'/',sample]);
