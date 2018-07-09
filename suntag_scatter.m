@@ -28,7 +28,7 @@ for f = 1:30
         end
     end
     
-    figure(1);imshow(mat2gray(stack_one(:,:,frame)));hold on; scatter(centers(:,1),centers(:,2),50)
+    figure(1);imshow(mat2gray(stack_gfp(:,:,frame)));hold on; scatter(centers(:,1),centers(:,2),50)
     
     
     title(strcat([graph_title,' ',num2str(frame)]),'FontSize',24)
