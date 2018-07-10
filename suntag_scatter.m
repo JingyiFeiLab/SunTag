@@ -23,7 +23,7 @@ for f = 1:30
         frames = mRNA_struct(i).Frames;
         for j = 1:length(frames)
             if frames(j) == frame
-                centers = [centers; mRNA_struct(i).Center(j,2),mRNA_struct(i).Center(j,1)];
+                centers = [centers; mRNA_struct(i).gfp_Center(j,2),mRNA_struct(i).gfp_Center(j,1)];
             end
         end
     end

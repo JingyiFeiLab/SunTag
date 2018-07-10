@@ -52,23 +52,37 @@ field5 = 'GFP_Intensity';
 field6 = 'mRNA_Intensity';
 field7 = 'GFP_Background';
 field8 = 'mRNA_Background';
+field9 = 'GFP_noBackSub';
+field10 = 'mRNA_noBackSub';
+field11 = 'mean_GFP_Pixel';
+field12 = 'mean_mRNA_Pixel';
+field13 = 'mean_GFP_Pixel_noBackSub';
+field14 = 'mean_mRNA_Pixel_noBackSub';
 
 
-mRNA_struct = struct(field1,[],field2, [], field3, [], field4, [],field5, [],field6, [],field7, [],field8, []);
+mRNA_struct = struct(field1,[],field2, [], field3, [], field4, [],field5, [],field6, [],field7, [],field8, [],field9, [],field10, [],field11, [],field12, [],field13, [],field14, []);
 
 for i = 1:num_mRNAs
     mRNA_struct(i).mRNA = i;
     temp_mRNA = particles(particles(:,5)==i,:);
     mRNA_struct(i).mRNA_Center = [temp_mRNA(:,1),temp_mRNA(:,2)];
+    mRNA_struct(i).gfp_Center = [temp_mRNA(:,1),temp_mRNA(:,2)];
     frames = temp_mRNA(:,4)+1;
     mRNA_struct(i).Frames = frames;
     gs = 10-window;
     gfp_int_array = zeros(gs^2,length(frames));
-    gfp_center = zeros(length(frames),2);
     final_gfp_int_array = zeros(1,length(frames));
     final_mRNA_int_array = zeros(1,length(frames));
+    final_gfp_int_array_noBack = zeros(1,length(frames));
+    final_mRNA_int_array_noBack = zeros(1,length(frames));
     final_gfp_background = zeros(1,length(frames));
     final_mRNA_background = zeros(1,length(frames));
+    
+    final_gfp_pixel = zeros(1,length(frames));
+    final_mRNA_pixel = zeros(1,length(frames));
+    final_gfp_pixel_noBack = zeros(1,length(frames));
+    final_mRNA_pixel_noBack = zeros(1,length(frames));
+    
     for j = 1:length(frames)
         temp_x = int32(temp_mRNA(j,1));
         temp_y = int32(temp_mRNA(j,2));
@@ -94,12 +108,14 @@ for i = 1:num_mRNAs
         
         center_x_mRNA(center_x_mRNA<1) = 1;center_y_mRNA(center_y_mRNA<1) = 1;center_x_mRNA(center_x_mRNA>X) = X;center_y_mRNA(center_y_mRNA>Y) = Y;
         mRNA_int = zeros(3,3);
+        mRNA_int_noBack = zeros(3,3);
         
         qs = 0;
         for ms = 1:3
             for ns = 1:3
                 qs = qs + 1;
                 mRNA_int(ms,ns) = stack_mRNA(center_x_mRNA(ms),center_y_mRNA(ns),frames(j)) - mRNA_background;
+                mRNA_int_noBack(ms,ns) = stack_mRNA(center_x_mRNA(ms),center_y_mRNA(ns),frames(j));
             end
         end
         
@@ -127,37 +143,41 @@ for i = 1:num_mRNAs
         
         
         q = 0;
-        for m = 1:gs
-            for n = 1:gs
+        center_x_array(center_x_array<1) = 1;center_y_array(center_y_array<1) = 1;center_x_array(center_x_array>X) = X;center_y_array(center_y_array>Y) = Y;
+        gfp_int = zeros(window,window);
+        gfp_int_noBack = zeros(window,window);
+        
+        for k = 1:gs
+            for l = 1:gs
                 q = q + 1;
-                center_x = center_x_array(m);
-                center_y = center_y_array(n);
-                temp_x_array = center_x-floor(window/2):center_x+floor(window/2);
-                temp_y_array = center_y-floor(window/2):center_y+floor(window/2);
-                temp_x_array(temp_x_array<1)=1;temp_y_array(temp_y_array<1)=1;temp_x_array(temp_x_array>X)=X;temp_y_array(temp_y_array>Y)=Y;
-                gfp_int = zeros(5,5);
-                for k = 1:window
-                    for l = 1:window
-                        gfp_int(k,l) = stack_gfp(temp_x_array(k),temp_y_array(l),frames(j)) - gfp_background;
-                    end
-                end
-                gfp_int_array(q,j) = sum(gfp_int(:));
+                gfp_int(k,l) = stack_gfp(center_x_array(k),center_y_array(l),frames(j)) - gfp_background;
+                gfp_int_noBack(k,l) = stack_gfp(center_x_array(k),center_y_array(l),frames(j));
             end
         end
-        [final_gfp_int_array(j),gfp_ind] = max(gfp_int_array(:,j));
-        [gfp_ind_x,gfp_ind_y] = ind2sub(size(zeros(5,5)),gfp_ind);
+        final_gfp_int_array(j) = sum(gfp_int(:));
         final_mRNA_int_array(j) = sum(mRNA_int(:));
+        final_gfp_int_array_noBack(j) = sum(gfp_int_noBack(:));
+        final_mRNA_int_array_noBack(j) = sum(mRNA_int_noBack(:));
+        final_gfp_pixel(j) = mean(gfp_int(:));
+        final_mRNA_pixel(j) = mean(mRNA_int(:));
+        final_gfp_pixel_noBack(j) = mean(gfp_int_noBack(:));
+        final_mRNA_pixel_noBack(j) = mean(mRNA_int_noBack(:));
+        
         final_gfp_background(j) = gfp_background;
         final_mRNA_background(j) = mRNA_background;
-        gfp_center(j,:) = [center_x_array(gfp_ind_x),center_y_array(gfp_ind_y)];
     end
-    final_gfp_int_array(final_gfp_int_array<0) = 0;
-    final_mRNA_int_array(final_mRNA_int_array<0) = 0;
-    mRNA_struct(i).gfp_Center = gfp_center;
+%     final_gfp_int_array(final_gfp_int_array<0) = 0;
+%     final_mRNA_int_array(final_mRNA_int_array<0) = 0;
     mRNA_struct(i).GFP_Intensity = final_gfp_int_array';
     mRNA_struct(i).mRNA_Intensity = final_mRNA_int_array';
+    mRNA_struct(i).GFP_noBackSub = final_gfp_int_array_noBack';
+    mRNA_struct(i).mRNA_noBackSub = final_mRNA_int_array_noBack';
     mRNA_struct(i).GFP_Background = final_gfp_background';
     mRNA_struct(i).mRNA_Background = final_mRNA_background';
+    mRNA_struct(i).mean_GFP_Pixel = final_gfp_pixel';
+    mRNA_struct(i).mean_mRNA_Pixel = final_mRNA_pixel';
+    mRNA_struct(i).mean_GFP_Pixel_noBackSub = final_gfp_pixel_noBack';
+    mRNA_struct(i).mean_mRNA_Pixel_noBackSub = final_mRNA_pixel_noBack';
     
 end
                 
