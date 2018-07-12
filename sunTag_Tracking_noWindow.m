@@ -13,6 +13,9 @@ mRNA_image_filepath = '/Users/reyer/Documents/MATLAB/SOURCE_CODES/sample_images_
 % Direct to .txt file with mRNA tracking results
 mRNA_file = '/Users/reyer/Documents/MATLAB/SOURCE_CODES/sample_images_matt/Matt_Microscope/suntag8418/sample8418.txt';
 
+x_col = 2;
+y_col = 1;
+z_col = 3;
 
 % Don't Change any of these
 channels = 1;
@@ -20,14 +23,16 @@ ref_channel = 1;
 ref_slice = 16;
 dim = 2;
 slices2D = 15;
-pixelscaling = .130;
-window = 5; % Size of mRNA tracking window for GFP projection
+pixelscaling = 1;
+window = 1; % Size of mRNA tracking window for GFP projection
+
+
 
 
 particles = textread(mRNA_file);
 
-x=particles(:,1);                          % Select the column containing X coordinates in Pixel form
-y=particles(:,2);                          % Select the column containing Y coordinates in Pixel form
+x=particles(:,x_col)/pixelscaling;                          % Select the column containing X coordinates in Pixel form
+y=particles(:,y_col)/pixelscaling;                          % Select the column containing Y coordinates in Pixel form
 spot_frame=particles(:,4);                 % Frame of mRNA Spot
 SpotID=particles(:,5);                     % mRNA Spot ID
 
@@ -65,12 +70,12 @@ mRNA_struct = struct(field1,[],field2, [], field3, [], field4, [],field5, [],fie
 for i = 1:num_mRNAs
     mRNA_struct(i).mRNA = i;
     temp_mRNA = particles(particles(:,5)==i,:);
-    mRNA_struct(i).mRNA_Center = [temp_mRNA(:,1),temp_mRNA(:,2)];
-    mRNA_struct(i).gfp_Center = [temp_mRNA(:,1),temp_mRNA(:,2)];
+    mRNA_struct(i).mRNA_Center = [temp_mRNA(:,x_col),temp_mRNA(:,y_col)];
+    mRNA_struct(i).gfp_Center = [temp_mRNA(:,x_col),temp_mRNA(:,y_col)];
     frames = temp_mRNA(:,4)+1;
     mRNA_struct(i).Frames = frames;
-    gs = 10-window;
-    gfp_int_array = zeros(gs^2,length(frames));
+    gfp_int_array = zeros(window,window);
+    gfp_background_array = zeros(window+2,window+2);
     final_gfp_int_array = zeros(1,length(frames));
     final_mRNA_int_array = zeros(1,length(frames));
     final_gfp_int_array_noBack = zeros(1,length(frames));
@@ -84,21 +89,21 @@ for i = 1:num_mRNAs
     final_mRNA_pixel_noBack = zeros(1,length(frames));
     
     for j = 1:length(frames)
-        temp_x = int32(temp_mRNA(j,1));
-        temp_y = int32(temp_mRNA(j,2));
+        temp_x = int32(temp_mRNA(j,x_col));
+        temp_y = int32(temp_mRNA(j,y_col));
         center_x_mRNA = temp_x-1:temp_x+1;
         center_y_mRNA = temp_y-1:temp_y+1;
         background_x_mRNA = temp_x-3:temp_x+3;
         background_y_mRNA = temp_y-3:temp_y+3;
         background_x_mRNA(background_x_mRNA<1) = 1;background_y_mRNA(background_y_mRNA<1) = 1;background_x_mRNA(background_x_mRNA>X) = X;background_y_mRNA(background_y_mRNA>Y) = Y;
         
-        mRNA_background_int = zeros(7,7);
-        for msb = 1:7
-            for nsb = 1:7
+        mRNA_background_int = zeros(5,5);
+        for msb = 1:5
+            for nsb = 1:5
                 if sum(background_x_mRNA(msb)==center_x_mRNA)>0 && sum(background_y_mRNA(nsb)==center_y_mRNA)>0
                     continue
                 end
-                mRNA_background_int(msb,nsb) = stack_mRNA(background_x_mRNA(msb),background_y_mRNA(nsb),frames(j));
+                mRNA_background_int(msb,nsb) = stack_mRNA(background_y_mRNA(msb),background_x_mRNA(nsb),frames(j));
             end
         end
         
@@ -110,30 +115,29 @@ for i = 1:num_mRNAs
         mRNA_int = zeros(3,3);
         mRNA_int_noBack = zeros(3,3);
         
-        qs = 0;
         for ms = 1:3
             for ns = 1:3
-                qs = qs + 1;
-                mRNA_int(ms,ns) = stack_mRNA(center_x_mRNA(ms),center_y_mRNA(ns),frames(j)) - mRNA_background;
-                mRNA_int_noBack(ms,ns) = stack_mRNA(center_x_mRNA(ms),center_y_mRNA(ns),frames(j));
+                
+                mRNA_int(ms,ns) = stack_mRNA(center_y_mRNA(ms),center_x_mRNA(ns),frames(j)) - mRNA_background;
+                mRNA_int_noBack(ms,ns) = stack_mRNA(center_y_mRNA(ms),center_x_mRNA(ns),frames(j));
             end
         end
         
                 
         
-        center_x_array = temp_x-floor(gs/2):temp_x+floor(gs/2);
-        center_y_array = temp_y-floor(gs/2):temp_y+floor(gs/2);
-        background_x_gfp = temp_x-5:temp_x+5;
-        background_y_gfp = temp_y-5:temp_y+5;
+        center_x_array = temp_x-floor(window/2):temp_x+floor(window/2);
+        center_y_array = temp_y-floor(window/2):temp_y+floor(window/2);
+        background_x_gfp = temp_x-floor(window/2)-1:temp_x+floor(window/2)+1;
+        background_y_gfp = temp_y-floor(window/2)-1:temp_y+floor(window/2)+1;
         background_x_gfp(background_x_gfp<1) = 1;background_y_gfp(background_y_gfp<1) = 1;background_x_gfp(background_x_gfp>X) = X;background_y_gfp(background_y_gfp>Y) = Y;
         
-        gfp_background_int = zeros(11,11);
-        for ksb = 1:11
-            for lsb = 1:11
-                if sum(ksb==2:10) > 0 && sum(lsb==2:10) > 0 
+        gfp_background_int = zeros(window+2,window+2);
+        for ksb = 1:window+2
+            for lsb = 1:window
+                if sum(ksb==2:window+1) > 0 && sum(lsb==2:window+1) > 0
                     continue
                 end
-                gfp_background_int(ksb,lsb) = stack_gfp(background_x_gfp(ksb),background_y_gfp(lsb),frames(j));
+                gfp_background_int(ksb,lsb) = stack_gfp(background_y_gfp(ksb),background_x_gfp(lsb),frames(j));
             end
         end
         
@@ -141,19 +145,18 @@ for i = 1:num_mRNAs
         gfp_background_int(gfp_background_int==0) = [];
         gfp_background = median(gfp_background_int);
         
-        
-        q = 0;
         center_x_array(center_x_array<1) = 1;center_y_array(center_y_array<1) = 1;center_x_array(center_x_array>X) = X;center_y_array(center_y_array>Y) = Y;
         gfp_int = zeros(window,window);
         gfp_int_noBack = zeros(window,window);
         
-        for k = 1:gs
-            for l = 1:gs
+        for k = 1:window
+            for l = 1:window
                 q = q + 1;
-                gfp_int(k,l) = stack_gfp(center_x_array(k),center_y_array(l),frames(j)) - gfp_background;
-                gfp_int_noBack(k,l) = stack_gfp(center_x_array(k),center_y_array(l),frames(j));
+                gfp_int(k,l) = stack_gfp(center_y_array(k),center_x_array(l),frames(j)) - gfp_background;
+                gfp_int_noBack(k,l) = stack_gfp(center_y_array(k),center_x_array(l),frames(j));
             end
         end
+        
         final_gfp_int_array(j) = sum(gfp_int(:));
         final_mRNA_int_array(j) = sum(mRNA_int(:));
         final_gfp_int_array_noBack(j) = sum(gfp_int_noBack(:));

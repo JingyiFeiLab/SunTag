@@ -1,23 +1,31 @@
-close all
+
+% Change all the names of these directories if you want to save them
+% automatically. Alternatively comment them out, as well as lines 12-20,
+% and 59-66 if you don't want to change the folder names and save the
+% figures automatically
+
 parentDir = '/Users/reyer/Data/SunTag_Tracking/'; %This and line below define
 newFile = 'suntag8418';             % where you want to save the images. Create a new folder
 graph_title = 'GFP Intensity for mRNA ';
 sample = 'sample1_5by5/mRNA/'; % Will save images in defined folder, sub-folder called "/mRNA"
 
-% compareDir = strcat([parentDir,newFile]);
-% sampleDir = strcat([compareDir,'/',sample]);
-% if exist(compareDir,'dir')~=7
-%     mkdir(parentDir, newFile)
-% end
-% 
-% if exist(sampleDir,'dir')~=7
-%     mkdir(compareDir, sample)
-% end
+compareDir = strcat([parentDir,newFile]);
+sampleDir = strcat([compareDir,'/',sample]);
+if exist(compareDir,'dir')~=7
+    mkdir(parentDir, newFile)
+end
+
+if exist(sampleDir,'dir')~=7
+    mkdir(compareDir, sample)
+end
 
 
 
-    
+si = 1;
+
 for i = 1:num_mRNAs
+    
+    subplot(3,3,si)
     frames = mRNA_struct(i).Frames;
     gfp = mRNA_struct(i).GFP_Intensity;
     mrna = mRNA_struct(i).mRNA_Intensity;
@@ -40,18 +48,23 @@ for i = 1:num_mRNAs
     
     
     
-    title(strcat([graph_title, num2str(i)]),'FontSize',32)
-    xlabel('Frame','FontSize',24)
-    set(ax(1),'FontSize',18)
-    set(ax(2),'FontSize',18)
-    %file1 = strcat([sampleDir,'mRNA',num2str(i)]);
-    set(gcf,'position',[835,883,868,667])
-    set(gcf,'PaperPositionMode','auto')
-%     print(file1,'-painters','-depsc','-r0')
-%     set(gcf,'PaperPositionMode','auto')
-%     print(file1,'-dpng','-r0')
-%     file1_fig = strcat([sampleDir,'mRNA',num2str(i),'.fig']);
-%     savefig(gcf,file1_fig)
-    close all
+    title(strcat([graph_title, num2str(i)]),'FontSize',16)
+    xlabel('Frame','FontSize',16)
+    ax(1).FontSize = 12;
+    ax(2).FontSize = 12;
+    si = si+1;
+    
+    if si == 10
+        si = 1;
+        file1 = strcat([sampleDir,'mRNA',num2str(i)]);
+        set(gcf,'position',[339    51   868   623])
+        set(gcf,'PaperPositionMode','auto')
+        print(file1,'-painters','-depsc','-r0')
+        set(gcf,'PaperPositionMode','auto')
+        print(file1,'-dpng','-r0')
+        file1_fig = strcat([sampleDir,'mRNA',num2str(i),'.fig']);
+        savefig(gcf,file1_fig)
+        close all
+    end
     
 end

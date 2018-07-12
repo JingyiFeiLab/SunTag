@@ -1,9 +1,11 @@
 parentDir = '/Users/reyer/Data/SunTag_Tracking/'; %This and line below define
-newFile = 'suntag8418';             % where you want to save the images. Create a new folder
+newFile = 'IntensityCal71118';             % where you want to save the images. Create a new folder
 graph_title = 'mRNA spots over GFP Image, Frame';
 sample = 'sample1_5by5';
 
 window = 5;
+
+frames_of_interest = [1];
 
 compareDir = strcat([parentDir,newFile]);
 sampleDir = strcat([compareDir,'/',sample]);
@@ -15,17 +17,17 @@ if exist(sampleDir,'dir')~=7
     mkdir(compareDir, sample)
 end
 
-for f = 1:30
+for f = frames_of_interest
     frame = f;
     centers = [];
     
     for i = 1:num_mRNAs
-        frames = mRNA_struct(i).Frames;
-        for j = 1:length(frames)
-            if frames(j) == frame
-                centers = [centers; mRNA_struct(i).gfp_Center(j,1),mRNA_struct(i).gfp_Center(j,2)];
-            end
+        frames = GFP_struct(i).Frames;
+        
+        if frames == frame
+            centers = [centers; GFP_struct(i).GFP_Center(1),GFP_struct(i).GFP_Center(2)];
         end
+        
     end
     
     figure(1);imshow(mat2gray(stack_gfp(:,:,frame)));hold on; scatter(centers(:,1),centers(:,2),50)

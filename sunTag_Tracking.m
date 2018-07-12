@@ -13,27 +13,28 @@ mRNA_image_filepath = '/Users/reyer/Documents/MATLAB/SOURCE_CODES/sample_images_
 % Direct to .txt file with mRNA tracking results
 mRNA_file = '/Users/reyer/Documents/MATLAB/SOURCE_CODES/sample_images_matt/Matt_Microscope/suntag8418/sample8418.txt';
 
+x_col = 2;
+y_col = 1;
+z_col = 3;
 
 % Don't Change any of these
 channels = 1;
-ref_channel = 1;
-ref_slice = 16;
-dim = 2;
-slices2D = 15;
-pixelscaling = .130;
+slices = 31;
+pixelscaling = 1;
 window = 5; % Size of mRNA tracking window for GFP projection
 
 
 particles = textread(mRNA_file);
 
-x=particles(:,1);                          % Select the column containing X coordinates in Pixel form
-y=particles(:,2);                          % Select the column containing Y coordinates in Pixel form
+x=particles(:,x_col)/pixelscaling;                          % Select the column containing X coordinates in Pixel form
+y=particles(:,y_col)/pixelscaling;                          % Select the column containing Y coordinates in Pixel form
 spot_frame=particles(:,4);                 % Frame of mRNA Spot
 SpotID=particles(:,5);                     % mRNA Spot ID
 
-[~,~,stack_gfp,~,~,~,~,slices] = imFormat(gfp_image_filepath,ref_channel,dim,ref_slice,slices2D,channels);
-[~,~,stack_mRNA,~,~,~,~,slices] = imFormat(mRNA_image_filepath,ref_channel,dim,ref_slice,slices2D,channels);
-[X,Y] = size(stack_gfp(:,:,ref_slice));
+stack_gfp = imFormat_wholeImage(gfp_image_filepath,slices);
+stack_gfp = imFormat_wholeImage(mRNA_image_filepath,slices);
+[X,Y] = size(stack_gfp(:,:,1));
+
 
 x_coord = int32(x);
 y_coord = int32(y);
@@ -59,7 +60,7 @@ mRNA_struct = struct(field1,[],field2, [], field3, [], field4, [],field5, [],fie
 for i = 1:num_mRNAs
     mRNA_struct(i).mRNA = i;
     temp_mRNA = particles(particles(:,5)==i,:);
-    mRNA_struct(i).mRNA_Center = [temp_mRNA(:,1),temp_mRNA(:,2)];
+    mRNA_struct(i).mRNA_Center = [temp_mRNA(:,x_col),temp_mRNA(:,y_col)];
     frames = temp_mRNA(:,4)+1;
     mRNA_struct(i).Frames = frames;
     gs = 10-window;
@@ -70,8 +71,8 @@ for i = 1:num_mRNAs
     final_gfp_background = zeros(1,length(frames));
     final_mRNA_background = zeros(1,length(frames));
     for j = 1:length(frames)
-        temp_x = int32(temp_mRNA(j,1));
-        temp_y = int32(temp_mRNA(j,2));
+        temp_x = int32(temp_mRNA(j,x_col));
+        temp_y = int32(temp_mRNA(j,y_col));
         center_x_mRNA = temp_x-1:temp_x+1;
         center_y_mRNA = temp_y-1:temp_y+1;
         background_x_mRNA = temp_x-3:temp_x+3;
@@ -84,7 +85,7 @@ for i = 1:num_mRNAs
                 if sum(background_x_mRNA(msb)==center_x_mRNA)>0 && sum(background_y_mRNA(nsb)==center_y_mRNA)>0
                     continue
                 end
-                mRNA_background_int(msb,nsb) = stack_mRNA(background_x_mRNA(msb),background_y_mRNA(nsb),frames(j));
+                mRNA_background_int(msb,nsb) = stack_mRNA(background_y_mRNA(msb),background_x_mRNA(nsb),frames(j));
             end
         end
         
@@ -99,7 +100,7 @@ for i = 1:num_mRNAs
         for ms = 1:3
             for ns = 1:3
                 qs = qs + 1;
-                mRNA_int(ms,ns) = stack_mRNA(center_x_mRNA(ms),center_y_mRNA(ns),frames(j)) - mRNA_background;
+                mRNA_int(ms,ns) = stack_mRNA(center_y_mRNA(ms),center_x_mRNA(ns),frames(j)) - mRNA_background;
             end
         end
         
@@ -117,7 +118,7 @@ for i = 1:num_mRNAs
                 if sum(ksb==2:10) > 0 && sum(lsb==2:10) > 0 
                     continue
                 end
-                gfp_background_int(ksb,lsb) = stack_gfp(background_x_gfp(ksb),background_y_gfp(lsb),frames(j));
+                gfp_background_int(ksb,lsb) = stack_gfp(background_y_gfp(ksb),background_x_gfp(lsb),frames(j));
             end
         end
         
@@ -138,7 +139,7 @@ for i = 1:num_mRNAs
                 gfp_int = zeros(5,5);
                 for k = 1:window
                     for l = 1:window
-                        gfp_int(k,l) = stack_gfp(temp_x_array(k),temp_y_array(l),frames(j)) - gfp_background;
+                        gfp_int(k,l) = stack_gfp(temp_y_array(k),temp_x_array(l),frames(j)) - gfp_background;
                     end
                 end
                 gfp_int_array(q,j) = sum(gfp_int(:));
