@@ -32,7 +32,7 @@ spot_frame=particles(:,4);                 % Frame of mRNA Spot
 SpotID=particles(:,5);                     % mRNA Spot ID
 
 stack_gfp = imFormat_wholeImage(gfp_image_filepath,slices);
-stack_gfp = imFormat_wholeImage(mRNA_image_filepath,slices);
+stack_mRNA = imFormat_wholeImage(mRNA_image_filepath,slices);
 [X,Y] = size(stack_gfp(:,:,1));
 
 
